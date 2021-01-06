@@ -3,7 +3,7 @@ from os import path
 from string import ascii_lowercase
 
 
-def caesar(text=None, key=None):
+def caesar(text, key):
     """
     This Function implements the Caesar Cipher
 
@@ -28,43 +28,6 @@ def caesar(text=None, key=None):
         return text
     except TypeError as e:
         print(e)
-
-
-def defaultCaesar():
-    abs_path = path.split(path.abspath(__file__))[0]
-    file_path = path.join(abs_path, 'Input Files/Caesar/caesar_plain.txt')
-    file = open(file_path, 'r')
-    caesarPlain = file.readlines()
-    file.close()
-    for key in [3, 6, 12]:
-        file_path = path.join(
-            abs_path, f'Input Files/Caesar/caesar_ciphered_{key}.txt')
-        file = open(file_path, 'w')
-        for text in caesarPlain:
-            if text[len(text)-1:] == '\n':
-                file.write(caesar(text=text[:len(text)-1], key=key)+'\n')
-            else:
-                file.write(caesar(text=text, key=key))
-    print("Default Caesar Cipher Done")
-
-
-def playFair(text, key):
-    """
-    This is the PlayFair Cipher
-
-    It takes a pair of letters,
-    and replaces them based on the key
-    """
-
-    # Set Key matrix
-    keyArray = setKey(key)
-
-    # Set Text before encrypting
-    text = setText(text)
-
-    # Encrypt Text
-    text = innerPlayFair(text, keyArray)
-    return ''.join(text)
 
 def innerPlayFair(text, keyArray):
     for index in range(len(text)//2):
@@ -165,6 +128,24 @@ def setKey(key):
                 remainIndex += 1
     return keyArray
 
+def playFair(text, key):
+    """
+    This is the PlayFair Cipher
+
+    It takes a pair of letters,
+    and replaces them based on the key
+    """
+
+    # Set Key matrix
+    keyArray = setKey(key)
+
+    # Set Text before encrypting
+    text = setText(text)
+
+    # Encrypt Text
+    text = innerPlayFair(text, keyArray)
+    return ''.join(text)
+
 def defaultPlayFair():
     abs_path = path.split(path.abspath(__file__))[0]
     file_path = path.join(abs_path, 'Input Files/PlayFair/playfair_plain.txt')
@@ -182,7 +163,23 @@ def defaultPlayFair():
             else:
                 file.write(playFair(text=text, key=key))
     print("Default PlayFair Cipher Done")
-    
+
+def defaultCaesar():
+    abs_path = path.split(path.abspath(__file__))[0]
+    file_path = path.join(abs_path, 'Input Files/Caesar/caesar_plain.txt')
+    file = open(file_path, 'r')
+    caesarPlain = file.readlines()
+    file.close()
+    for key in [3, 6, 12]:
+        file_path = path.join(
+            abs_path, f'Input Files/Caesar/caesar_ciphered_{key}.txt')
+        file = open(file_path, 'w')
+        for text in caesarPlain:
+            if text[len(text)-1:] == '\n':
+                file.write(caesar(text=text[:len(text)-1], key=key)+'\n')
+            else:
+                file.write(caesar(text=text, key=key))
+    print("Default Caesar Cipher Done") 
 
 defaultCaesar()
 defaultPlayFair()
