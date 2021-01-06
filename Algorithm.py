@@ -1,7 +1,7 @@
 from copy import deepcopy
 from os import path
 from string import ascii_lowercase
-
+import numpy as np
 
 def caesar(text, key):
     """
@@ -146,6 +146,44 @@ def playFair(text, key):
     text = innerPlayFair(text, keyArray)
     return ''.join(text)
 
+def Hill(text, key):
+    """
+    This is the Hill Cipher
+
+    It takes a String, and a key
+
+    and returns the encrypted text
+    """
+    
+    text = list(text)
+    size = len(key)
+    count = (size - (len(text)%size))%size
+    if len(text)%size != 0:
+        for i in range(count):
+            text.append('X')
+    shift = ord('A')
+    temp = list()
+    for letter in text:
+        temp.append(ord(letter)-shift)
+    temp = np.array(temp)
+    plain = np.reshape(temp,(size, -1))
+    print(plain)
+    print(key)
+    cipher = np.matmul(key,plain)%26
+    cipher = list(np.array(np.reshape(cipher, -1))[0])
+    print(cipher)
+    temp = list()
+    for letter in cipher:
+        temp.append(chr(letter+shift))
+    text = ''.join(temp[:len(temp)-count])
+    print(text)
+    
+
+
+    
+
+    
+
 def defaultPlayFair():
     abs_path = path.split(path.abspath(__file__))[0]
     file_path = path.join(abs_path, 'Input Files/PlayFair/playfair_plain.txt')
@@ -181,5 +219,6 @@ def defaultCaesar():
                 file.write(caesar(text=text, key=key))
     print("Default Caesar Cipher Done") 
 
-defaultCaesar()
-defaultPlayFair()
+""" defaultCaesar()
+defaultPlayFair() """
+Hill('VVMSQFGA',np.matrix('5 17; 8 3'))
