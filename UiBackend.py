@@ -362,3 +362,18 @@ defaultPlayFair()
 defaultHill() 
 defaultVigenere() 
 defaultVernam() """
+
+ciphers = {
+    'c': caesar,
+    'p': playFair,
+    'h': Hill,
+    'vi': Vigenere,
+    've': Vernam
+}
+defaultCiphers = {
+    'c': defaultCaesar,
+    'p': defaultPlayFair,
+    'h': defaultHill,
+    'vi': defaultVigenere,
+    've': defaultVernam
+}
