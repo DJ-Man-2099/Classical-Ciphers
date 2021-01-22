@@ -79,7 +79,7 @@ def getIndices(text, keyArray, index):
     return indices
 
 def setText(text):
-    temp = list(text)
+    temp = list(text.lower())
     i = 0
     length = len(temp)-1
     while i < length:
@@ -426,7 +426,7 @@ while request!='e':
                 key = input("Enter the key: ")
             if choice == 'vi':
                 secMode = input("Enter 'a' for auto mode, 'r' for repeated mode: ")
-                print("The ciphered Text is: "+ciphers[choice](plain, key, secMode))
+                print("The ciphered Text is: "+ciphers[choice](plain, key, secMode=='a'))
             else:
                 print("The ciphered Text is: "+ciphers[choice](plain, key))
         elif mode !='e':
@@ -449,3 +449,10 @@ while request!='e':
                         print("The ciphered Text is: "+ciphers[choice](plain, key))
                     break
     request=input("Please enter \"s\" to Start Ciphering  or \"e\" to exit: ")
+    while request not in ['s','e']:
+        print("invalid request, please try again")
+        request=input("Please enter 's' to Start Ciphering  or 'e' to exit: ")
+    if request == 's':
+        continue
+    elif request == 'e':
+        break
