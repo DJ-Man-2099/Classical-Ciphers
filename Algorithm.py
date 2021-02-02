@@ -3,9 +3,12 @@ from math import ceil
 from os import path
 from string import ascii_lowercase
 import numpy as np
+import gmpy2
 
 # Individual part
-def caesar(text, key):
+
+
+def caesar(text, key, mode=True):
     """
     This Function implements the Caesar Cipher
 
@@ -16,7 +19,7 @@ def caesar(text, key):
     """
     shift = ord('a')
     try:
-        if not (isinstance(key, str) and key.isdigit()) :
+        if not (isinstance(key, str) and key.isdigit()):
             raise TypeError("Key is not an Integer")
         if not isinstance(text, str):
             raise TypeError("Text is not a String")
@@ -25,23 +28,37 @@ def caesar(text, key):
         for index in range(len(text)):
             if not text[index].isalpha():
                 continue
-            alt = (((ord(text[index])-shift)+key) % 26)+shift
+            alt = forward(text, key, shift, index) if mode else reverse(
+                text, key, shift, index)
             text[index] = chr(alt)
         text = ''.join(text)
         return text
     except TypeError as e:
         print(e)
 
-def innerPlayFair(text, keyArray):
+
+def forward(text, key, shift, index):
+    alt = (((ord(text[index])-shift)+key) % 26)+shift
+    return alt
+
+
+def reverse(text, key, shift, index):
+    alt = (((ord(text[index])-shift)-key) % 26)+shift
+    return alt
+
+
+def innerPlayFair(text, keyArray, mode):
     for index in range(len(text)//2):
         # find indices
         indices = getIndices(text, keyArray, index)
         # check corner case
-        newIndices = getNewIndices(indices)
+        newIndices = getNewIndices(
+            indices) if mode else getInvNewIndices(indices)
         # switch
         text[index*2] = keyArray[newIndices[0][0]][newIndices[0][1]]
         text[index*2+1] = keyArray[newIndices[1][0]][newIndices[1][1]]
     return text
+
 
 def getNewIndices(indices):
     newIndices = list()
@@ -55,6 +72,21 @@ def getNewIndices(indices):
         newIndices.append([indices[0][0], indices[1][1]])
         newIndices.append([indices[1][0], indices[0][1]])
     return newIndices
+
+
+def getInvNewIndices(indices):
+    newIndices = list()
+    if indices[0][0] == indices[1][0]:
+        newIndices.append([indices[0][0], (indices[0][1]-1) % 5])
+        newIndices.append([indices[1][0], (indices[1][1]-1) % 5])
+    elif indices[0][1] == indices[1][1]:
+        newIndices.append([(indices[0][0]-1) % 5, indices[0][1]])
+        newIndices.append([(indices[1][0]-1) % 5, indices[1][1]])
+    else:
+        newIndices.append([indices[0][0], indices[1][1]])
+        newIndices.append([indices[1][0], indices[0][1]])
+    return newIndices
+
 
 def getIndices(text, keyArray, index):
     indices = list()
@@ -78,6 +110,7 @@ def getIndices(text, keyArray, index):
             break
     return indices
 
+
 def setText(text):
     temp = list(text.lower())
     i = 0
@@ -92,6 +125,7 @@ def setText(text):
     if len(temp) % 2 != 0:
         temp.append('x')
     return temp
+
 
 def setKey(key):
     keyArray = list()
@@ -131,7 +165,8 @@ def setKey(key):
                 remainIndex += 1
     return keyArray
 
-def playFair(text, key):
+
+def playFair(text, key, mode=True):
     """
     This is the PlayFair Cipher
 
@@ -146,10 +181,11 @@ def playFair(text, key):
     text = setText(text)
 
     # Encrypt Text
-    text = innerPlayFair(text, keyArray)
+    text = innerPlayFair(text, keyArray, mode)
     return ''.join(text)
 
-def Hill(text, key):
+
+def Hill(text, key, mode=True):
     """
     This is the Hill Cipher
 
@@ -160,6 +196,8 @@ def Hill(text, key):
     text = text.upper()
     text = list(text)
     key = np.matrix(key)
+    if not mode:
+        key = inverse(key)
     size = len(key)
     count = (size - (len(text) % size)) % size
     if len(text) % size != 0:
@@ -172,19 +210,29 @@ def Hill(text, key):
     temp = np.array(temp)
     # print(size)
     plain = np.reshape(temp, (-1, size)).transpose()
-    print(plain)
-    print(key)
+    """ print(plain)
+    print(key) """
     cipher = (np.dot(key, plain) % 26).transpose()
     cipher = list(np.array(np.reshape(cipher, -1))[0])
-    print(cipher)
+    # print(cipher)
     temp = list()
     for letter in cipher:
         temp.append(chr(letter+shift))
-    text = ''.join(temp[:len(temp)-count])
+    text = ''.join(temp)
     # print(text)
     return text
 
-def Vigenere(text, key, mode):
+
+def inverse(array):
+    newArray = deepcopy(array)
+    deter = np.rint(np.linalg.det(array)).astype(int)
+    newArray = np.rint(np.linalg.inv(newArray)*deter).astype(int) % 26
+    deter = int(str(gmpy2.rint(gmpy2.invert(gmpy2.mpz(deter % 26), 26)))[:-2])
+    newArray = (newArray*deter) % 26
+    return newArray
+
+
+def Vigenere(text, key, mode, enc=True):
     """
     This is the Vigenere Cipher
 
@@ -203,16 +251,34 @@ def Vigenere(text, key, mode):
     text = text.lower()
     key = key.lower()
     if mode:  # auto mode
-        trueKey += key + text[:textSize-keySize]
+        trueKey += key
+        if enc:
+            for letter in range(textSize):  # ciphering
+                cipher += chr((ord(text[letter])-ord('a') +
+                               (ord(trueKey[letter])-ord('a'))) % 26+ord('a'))
+                trueKey += text[letter]
+        else:
+            for letter in range(textSize):  # deciphering
+                cipher += chr((ord(text[letter])-ord('a') -
+                               (ord(trueKey[letter])-ord('a'))) % 26+ord('a'))
+                trueKey += cipher[-1]
+
     else:  # repeat mode
         trueKey += key*(ceil(textSize/keySize))
     # print(trueKey)
-    for letter in range(textSize):  # ciphering
-        cipher += chr((ord(text[letter])-2*ord('a') +
-                       ord(trueKey[letter])) % 26+ord('a'))
+        if enc:
+            for letter in range(textSize):  # ciphering
+                cipher += chr((ord(text[letter])-ord('a') +
+                               (ord(trueKey[letter])-ord('a'))) % 26+ord('a'))
+        else:
+            for letter in range(textSize):  # deciphering
+                cipher += chr((ord(text[letter])-ord('a') -
+                               (ord(trueKey[letter])-ord('a'))) % 26+ord('a'))
+
     return cipher
 
-def Vernam(text, key):
+
+def Vernam(text, key, mode=True):
     """
     This is the Vernam Cipher
 
@@ -227,17 +293,23 @@ def Vernam(text, key):
     cipher = ''
     if keySize < textSize:
         raise ValueError("Key can't be Shorter than the text")
-    for letter in range(textSize):  # ciphering
-        cipher += chr((ord(text[letter])-2*ord('A') +
-                       ord(key[letter])) % 26+ord('A'))
+    if mode:
+        for letter in range(textSize):  # ciphering
+            cipher += chr((ord(text[letter])-ord('A') +
+                           (ord(key[letter])-ord('A'))) % 26+ord('A'))
+    else:
+        for letter in range(textSize):  # deciphering
+            cipher += chr((ord(text[letter])-ord('A') -
+                           (ord(key[letter])-ord('A'))) % 26+ord('A'))
+
     return cipher
 
 
 # Default part
 def defaultCaesar():
-    #try:
+    # try:
     abs_path = path.split(path.abspath(__file__))[0]
-    file_path = path.join(abs_path,'Input Files/Caesar/caesar_plain.txt')
+    file_path = path.join(abs_path, 'Input Files/Caesar/caesar_plain.txt')
     file = open(file_path, 'r')
     caesarPlain = file.readlines()
     file.close()
@@ -251,9 +323,9 @@ def defaultCaesar():
             else:
                 file.write(caesar(text=text, key=key))
     print("Default Caesar Cipher Done")
-    #except:
-      #raise FileNotFoundError("Files Don't exist in the specified path")
-    
+    # except:
+    #raise FileNotFoundError("Files Don't exist in the specified path")
+
 
 def defaultPlayFair():
     abs_path = path.split(path.abspath(__file__))[0]
@@ -266,12 +338,12 @@ def defaultPlayFair():
             abs_path, f'Input Files/PlayFair/playfair_ciphered_{key}.txt')
         file = open(file_path, 'w')
         for text in playFairPlain:
-            temp = text[len(text)-1:]
             if text[len(text)-1:] == '\n':
                 file.write(playFair(text=text[:len(text)-1], key=key)+'\n')
             else:
                 file.write(playFair(text=text, key=key))
     print("Default PlayFair Cipher Done")
+
 
 def defaultHill():
     abs_path = path.split(path.abspath(__file__))[0]
@@ -308,6 +380,7 @@ def defaultHill():
 
     print("Default Hill Cipher Done")
 
+
 def defaultVigenere():
     abs_path = path.split(path.abspath(__file__))[0]
     file_path = path.join(abs_path, 'Input Files/Vigenere/vigenere_plain.txt')
@@ -339,6 +412,7 @@ def defaultVigenere():
 
     print("Default Vigenere Cipher Done")
 
+
 def defaultVernam():
     abs_path = path.split(path.abspath(__file__))[0]
     file_path = path.join(abs_path, 'Input Files/Vernam/vernam_plain.txt')
@@ -360,7 +434,6 @@ def defaultVernam():
     print("Default Vernam Cipher Done")
 
 
-
 """ defaultCaesar()
 defaultPlayFair() 
 defaultHill() 
@@ -370,10 +443,10 @@ defaultVernam() """
 
 request = ''
 print("Welcome to the Classical Ciphers Software:")
-request=input("Please enter 's' to Start Ciphering  or 'e' to exit: ")
-while request not in ['s','e']:
+request = input("Please enter 's' to Start Ciphering  or 'e' to exit: ")
+while request not in ['s', 'e']:
     print("invalid request, please try again")
-    request=input("Please enter 's' to Start Ciphering  or 'e' to exit: ")
+    request = input("Please enter 's' to Start Ciphering  or 'e' to exit: ")
 choice = ''
 plain = ''
 key = ''
@@ -393,76 +466,96 @@ defaultCiphers = {
     'vi': defaultVigenere,
     've': defaultVernam
 }
-while request!='e':
+while request != 'e':
     print("Enter 'c' for Caeser, 'p' for PlayFair,")
     print("Enter 'h' for Hill, 'vi' for Vigenere, and 've' for Vernam")
-    choice = input("Choose a cipher method, or enter 'e' to return to main menu: ")
+    choice = input(
+        "Choose a cipher method, or enter 'e' to return to main menu: ")
     if choice != 'e':
-        if choice not in ['c','p','h','vi','ve']:
-            while choice not in ['c','p','h','vi','ve', 'e']:
+        if choice not in ['c', 'p', 'h', 'vi', 've']:
+            while choice not in ['c', 'p', 'h', 'vi', 've', 'e']:
                 print('invalid cipher method, please try again')
                 print("Enter 'c' for Caeser, 'p' for PlayFair,")
                 print("Enter 'h' for Hill, 'vi' for Vigenere, and 've' for Vernam")
-                choice = input("Choose a cipher method, or enter 'e' to return to main menu: ")
+                choice = input(
+                    "Choose a cipher method, or enter 'e' to return to main menu: ")
             if choice == 'e':
-                request=input("Please enter 's' to Start Ciphering  or 'e' to exit: ")
+                request = input(
+                    "Please enter 's' to Start Ciphering  or 'e' to exit: ")
                 if request == 's':
                     continue
                 elif request == 'e':
                     break
                 else:
-                    while request not in ['s','e']:
+                    while request not in ['s', 'e']:
                         print("invalid request, please try again")
-                        request=input("Please enter 's' to Start Ciphering  or 'e' to exit: ")
+                        request = input(
+                            "Please enter 's' to Start Ciphering  or 'e' to exit: ")
                     if request == 's':
                         continue
                     elif request == 'e':
                         break
 
-        mode = input("Enter 'd' for default mode, 'i' to cipher input text, or 'e' to return to main menu: ")
-        if mode=='d':
+        mode = input(
+            "Enter 'd' for default mode, 'i' to manually input text, or 'e' to return to main menu: ")
+        if mode == 'd':
             try:
                 defaultCiphers[choice]()
             except FileNotFoundError as e:
-              print("Please ensure the files are in the pre-specified location \n(under Input Files)")
-        elif mode =='i':
+                print(
+                    "Please ensure the files are in the pre-specified location \n(under Input Files)")
+        elif mode == 'i':
+            enc = input("Enter 'e' for encryption, 'd' for decryption: ")
             plain = input("Enter the Plain Text: ")
             if choice == 'h':
                 key = input("Enter the key in matrix form (i.e: 3 5; 6 7): ")
             else:
                 key = input("Enter the key: ")
             if choice == 'vi':
-                secMode = input("Enter 'a' for auto mode, 'r' for repeated mode: ")
-                print("The ciphered Text is: "+ciphers[choice](plain, key, secMode=='a'))
+                secMode = input(
+                    "Enter 'a' for auto mode, 'r' for repeated mode: ")
+                print("The ciphered Text is: " +
+                      ciphers[choice](plain, key, secMode == 'a', enc == 'e'))
             else:
-                print("The ciphered Text is: "+ciphers[choice](plain, key))
-        elif mode !='e':
-            while mode!='d' or mode!='i' or mode!='e':
+                print("The ciphered Text is: " +
+                      ciphers[choice](plain, key, enc == 'e'))
+        elif mode != 'e':
+            while mode != 'd' or mode != 'i' or mode != 'e':
                 print('choice not understood, please try again')
-                mode = input("Enter 'd' for default mode, 'i' to cipher input text, or 'e' to return to main menu: ")
-                if mode=='d':
+                mode = input(
+                    "Enter 'd' for default mode, 'i' to cipher input text, or 'e' to return to main menu: ")
+                if mode == 'd':
                     try:
                         defaultCiphers[choice]()
                     except FileNotFoundError as e:
-                        print("Please ensure the files are in the pre-specified location \n(under Input Files)")
+                        print(
+                            "Please ensure the files are in the pre-specified location \n(under Input Files)")
                     finally:
                         break
-                elif mode =='i':
+                elif mode == 'i':
+                    enc = input(
+                        "Enter 'e' for encryption, 'd' for decryption: ")
                     plain = input("Enter the Plain Text: ")
                     if choice == 'h':
-                        key = input("Enter the key in matrix form (i.e: 3 5; 6 7): ")
+                        key = input(
+                            "Enter the key in matrix form (i.e: 3 5; 6 7): ")
                     else:
                         key = input("Enter the key: ")
                     if choice == 'vi':
-                        secMode = input("Enter 'a' for auto mode, 'r' for repeated mode: ")
-                        print("The ciphered Text is: "+ciphers[choice](plain, key, secMode))
+                        secMode = input(
+                            "Enter 'a' for auto mode, 'r' for repeated mode: ")
+                        print("The ciphered Text is: " +
+                              ciphers[choice](plain, key, secMode == 'a', enc == 'e'))
                     else:
-                        print("The ciphered Text is: "+ciphers[choice](plain, key))
+                        print("The ciphered Text is: " +
+                              ciphers[choice](plain, key, enc == 'e'))
                     break
-    request=input("Please enter \"s\" to Start Ciphering  or \"e\" to exit: ")
-    while request not in ['s','e']:
+    request = input(
+        "Please enter \"s\" to Start Ciphering  or \"e\" to exit: ")
+    while request not in ['s', 'e']:
         print("invalid request, please try again")
-        request=input("Please enter 's' to Start Ciphering  or 'e' to exit: ")
+        request = input(
+            "Please enter 's' to Start Ciphering  or 'e' to exit: ")
     if request == 's':
         continue
     elif request == 'e':
