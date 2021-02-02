@@ -235,8 +235,9 @@ def Vernam(text, key):
 
 # Default part
 def defaultCaesar():
+    #try:
     abs_path = path.split(path.abspath(__file__))[0]
-    file_path = path.join(abs_path, 'Input Files/Caesar/caesar_plain.txt')
+    file_path = path.join(abs_path,'Input Files/Caesar/caesar_plain.txt')
     file = open(file_path, 'r')
     caesarPlain = file.readlines()
     file.close()
@@ -250,6 +251,9 @@ def defaultCaesar():
             else:
                 file.write(caesar(text=text, key=key))
     print("Default Caesar Cipher Done")
+    #except:
+      #raise FileNotFoundError("Files Don't exist in the specified path")
+    
 
 def defaultPlayFair():
     abs_path = path.split(path.abspath(__file__))[0]
@@ -417,7 +421,10 @@ while request!='e':
 
         mode = input("Enter 'd' for default mode, 'i' to cipher input text, or 'e' to return to main menu: ")
         if mode=='d':
-            defaultCiphers[choice]()
+            try:
+                defaultCiphers[choice]()
+            except FileNotFoundError as e:
+              print("Please ensure the files are in the pre-specified location \n(under Input Files)")
         elif mode =='i':
             plain = input("Enter the Plain Text: ")
             if choice == 'h':
@@ -434,8 +441,12 @@ while request!='e':
                 print('choice not understood, please try again')
                 mode = input("Enter 'd' for default mode, 'i' to cipher input text, or 'e' to return to main menu: ")
                 if mode=='d':
-                    defaultCiphers[choice]()
-                    break
+                    try:
+                        defaultCiphers[choice]()
+                    except FileNotFoundError as e:
+                        print("Please ensure the files are in the pre-specified location \n(under Input Files)")
+                    finally:
+                        break
                 elif mode =='i':
                     plain = input("Enter the Plain Text: ")
                     if choice == 'h':
